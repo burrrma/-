@@ -1,0 +1,5 @@
+bs4
+urllib3
+lxml
+google-api-python-client
+google_auth_oauthlib
