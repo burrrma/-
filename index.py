@@ -219,7 +219,7 @@ def poisk_data_OZ(spisok_, data_z):
             answer += "преподаватель " + spisok_[j][7]
         elif datetime.datetime.strptime(spisok_[j][0], "%Y-%m-%d %H:%M:%S") > data_z:
             answer += data_z.strftime('%d.%m.%Y') + " у вас пар нет\n"
-            answer += "Следующий учебный день " + spisok_[j][0]
+            answer += "Следующий учебный день " + spisok_[j][0][0] + spisok_[j][0][1] + spisok_[j][0][2] + spisok_[j][0][3] + spisok_[j][0][4]
             return answer
     if len(answer) > 0:
         info = []
@@ -499,6 +499,7 @@ def take_a_link(module, direction, format_, level, course):
                     if 'график' not in link.get_text():
                         href = link.get('href')
                         groups.append(href)
+        print(groups)
 
         if direction == sub[0]:
             groups.insert(1, groups.pop(3))
@@ -506,8 +507,11 @@ def take_a_link(module, direction, format_, level, course):
         elif direction == sub[2] or direction == sub[4]:
             groups.insert(0, '-')
             groups.insert(0, "-")
-        make_response(text='Работаю')
         courses = ['first', 'second', 'third', 'fourth']
+
+        if(groups == []):
+            return None
+
         for i in range(4):
             if courses[i] == course:
                 return groups[i]  # выводим нужную ссылку
@@ -549,7 +553,7 @@ def make_response(text, tts=None, session_state=None, user_state_update=None, en
 
 #ФУНКЦИЯ ДЛЯ НАЧАЛА РЕГИСТРАЦИИ
 def what_curs(event):
-    text = "Я ещё не знаю, на каком курсе ты учишься. Подскажешь мне?"
+    text = "Я ещё не знаю, на каком курсе вы учитесь. Подскажете мне?"
     return make_response(text)
 
 #ФУНКЦИЯ ДЛЯ ЗАВЕРШЕНИЯ СЕССИИ
@@ -568,7 +572,7 @@ def what_level(event):
     curs = intent['course']['slots']['course']['value']
     curs_text = event['request']['original_utterance']
     event['user_state_update']: {'curs_for_search': curs}  # обновление состояния пользователя - был указан курс
-    return make_response(text='Замечательно! Подскажи, ты учишься на бакалавриате или магистратуре?',
+    return make_response(text='Замечательно! Подскажите, вы учитесь на бакалавриате или магистратуре?',
                          user_state_update={'curs_for_search': curs, 'curs_text': curs_text})
 
 #ВТОРАЯ ФУНКЦИЯ ДЛЯ РЕГИСТРАЦИИ
@@ -577,29 +581,18 @@ def what_direction(event):
     curs = intent['course']['slots']['course']['value']
     curs_text = event['request']['original_utterance']
     return make_response(
-        text='Отлично! Теперь скажи направление и формат, на котором ты учишься. Например, скажи: бакалавриат, бизнес-информатика, очно',
+        text='Отлично! Теперь скажите направление и формат, на котором учитесь. Например, скажите: бакалавриат, бизнес-информатика, очно',
         user_state_update={'curs_for_search': curs, 'curs_text': curs_text})
 
-
-'''
-def what_group(event):
-    intent = event['request']['nlu']['intents']
-    napravlenie = intent['direction']['slots']['direction']['value']
-    napr_text = event['request']['original_utterance']
-    form = intent['direction']['slots']['format']['value']
-    level = intent['direction']['slots']['level']['value']
-
-    return make_response(text = 'Внимательно запоминаю информацию. Последний вопрос - в какой группе ты учишься?', user_state_update = {'napravlenie_for_search': napravlenie, 'napr_text': napr_text, 'format_for_search' : form, 'level_for_search': level})
-'''
 
 #ФУНКЦИЯ ВЫЗОВА СПРАВКИ
 def spravka(event):
     return make_response(
-        "Привет, я помогу тебе узнать расписание основных дисциплин, если ты - студент Нижегородской Вышки. Например, ты хочешь узнать расписание по философии. Скажи: Алиса, когда у меня философия? Или: Алиса, что у меня во вторник? Я с радостью помогу! Чтобы поменять данные, скажи: хочу поменять данные")
+        "Привет, я помогу  узнать расписание основных дисциплин, если вы - студент Нижегородской Вышки. Например, вы хотите узнать расписание по философии. Скажите: Алиса, когда у меня философия? Или: Алиса, что у меня во вторник? Если хотите узнать, когда у вас пара с преподавателем, скажите, когда у меня пара с Владимиром Владимировым? Главное, чтобы фамилия была правильной. Также могу подсказать расписание по названию предмета. Чтобы поменять данные, скажи: хочу поменять данные.")
 
 #ФУНКЦИЯ ДЛЯ СМЕНЫ ДАННЫХ
 def change_data(event):
-    return make_response(text="Данные обнулены. Назови курс, на котором учишься",
+    return make_response(text="Данные обнулены. Назовите курс, на котором учитесь",
                          user_state_update={'curs_for_search': None, 'napravlenie_for_search': None,
                                             'level_for_search': None, 'group_for_search': None, 'day_today': None,
                                             'month_today': None, 'quater_today': None, 'format_for_search': None,
@@ -1087,11 +1080,16 @@ def handler(event, context):
         form = intent['direction']['slots']['format']['value']
         level = intent['direction']['slots']['level']['value']
 
-        link = take_a_link(quarter(), napravlenie, form, level, curs)
-
         if(form == 'ochno'):
+         link = take_a_link(quarter(), napravlenie, form, level, curs)
+         if(link is None):
+             return make_response(text = "Упс! Я не нашла нужную ссылку на сайте. Давай попробуем ещё раз!")
          schedule_arr_OZ = []
-        else:
+         
+        elif(form == 'ochnozaochno'):
+         link = take_a_link(quarter(), napravlenie, form, level, curs)
+         if(link is None):
+             return make_response(text = "Упс! Я не нашла нужную ссылку на сайте. Давай попробуем ещё раз!")
          schedule_arr_OZ = table_parsing_OZ(link)
 
         if(form == 'zaochno'):
