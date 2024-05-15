@@ -949,7 +949,7 @@ def news_title(type_chose):   #когда скажет какую-нибудь �
         if text != '' and len(subs) < amount_news:
             subs.append(text)     #заполнили кратким содержанием выбранных новостей
 
-    return headings_t, headings_l, subs
+    return headings_t, headings_l, subs, len(headings_t)
 
 #ФУНКЦИЯ ДЛЯ НОВОСТЕЙ - НАЧАЛО НОВОСТЕЙ
 def start_news(event):
@@ -967,13 +967,14 @@ def sh_rubrics(event):
 
 #ФУНКЦИЯ ДЛЯ НОВОСТЕЙ - ПОКАЗ ЗАГОЛОВКОЙ ПО ВЫБРАННОЙ РУБРИКЕ
 def headings(event):
+
     intent = event['request']['nlu']['intents']
     if('news_title' in intent):
      type_chose = intent['news_title']['slots']['rubrics']['value']
     else:
      type_chose = event.get('state').get('user', {}).get('type_chose') 
 
-    headings_t, headings_l, subs = news_title(type_chose) # сказал название конкретной рубрики
+    headings_t, headings_l, subs, number_of_news = news_title(type_chose) # сказал название конкретной рубрики
 
     TEXT4 = "Отлично! Показываю тебе названия последних заголовков новостей по выбранной рубрике:"
     headings = ''
@@ -981,20 +982,22 @@ def headings(event):
     for i in range(len(headings_t)):
         headings += str(i + 1) + '. ' + str(headings_t[i]) + '\n'
     TEXT4 += '\n' + headings + "\n" + 'Назови цифру новости, которую хочешь прочитать: ' #выводим пользователю (Тут в интентах надо добавить цифру от 1 до 7)
-    return make_response(text = TEXT4, user_state_update = {'headings_t': headings_t, 'headings_l': headings_l, 'subs': subs, 'type_chose': type_chose}) #выводим пользователю
+    return make_response(text = TEXT4, user_state_update = {'headings_t': headings_t, 'headings_l': headings_l, 'subs': subs, 'type_chose': type_chose, 'number_of_news': number_of_news}) #выводим пользователю
 
 #ФУНКЦИЯ ДЛЯ НОВОСТЕЙ - ПОКАЗ НОВОСТИ
 def res_news(event): #когда пользователь называет цифру
 
     intent = event['request']['nlu']['intents']
     title_chose = intent['res_news']['slots']['number']['value'] 
-
-    if title_chose != 1 and title_chose != 2 and title_chose != 3 and title_chose != 4 and title_chose != 5 and title_chose != 6 and title_chose != 7:
-        return make_response("Новости под такой цифрой нет. Назови, пожалуйста, цифру из тех, которые есть.")
-
     headings_t = event.get('state').get('user', {}).get('headings_t')
     headings_l = event.get('state').get('user', {}).get('headings_l')
     subs = event.get('state').get('user', {}).get('subs')
+    number_of_news = event.get('state').get('user', {}).get('number_of_news')
+
+    if title_chose < 1 or title_chose > number_of_news:
+        return make_response("Новости под такой цифрой нет. Назови, пожалуйста, цифру из тех, которые есть.")
+
+
 
     res_link = headings_l[title_chose - 1]
     title = headings_t[title_chose - 1]
